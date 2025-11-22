@@ -1,7 +1,9 @@
 package com.team3;
 
+import com.team3.view.LoginFrame;
+
 public class Main {
     public static void main(String[] args) {
-        System.out.println("Hello world!");
+        new LoginFrame();
     }
 }
