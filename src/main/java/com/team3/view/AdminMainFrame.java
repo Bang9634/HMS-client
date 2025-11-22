@@ -27,7 +27,7 @@ public class AdminMainFrame extends JFrame {
         // 버튼 생성
         JButton addUser = new JButton("사용자 추가 (Add User)");
         
-        // ★ [여기에 버튼 추가했습니다!] ★
+        // 여기에 버튼 추가했습니다!
         JButton listUser = new JButton("사용자 목록 조회 (User List)"); 
         
         JButton delUser = new JButton("사용자 삭제 (Delete User)");
@@ -38,7 +38,7 @@ public class AdminMainFrame extends JFrame {
 
         // 패널에 붙이기
         btnPanel.add(addUser);
-        btnPanel.add(listUser); // ★ 패널에도 추가!
+        btnPanel.add(listUser); // 패널에도 추가!
         btnPanel.add(delUser);
         btnPanel.add(roomInfo);
         btnPanel.add(payment);
@@ -54,7 +54,7 @@ public class AdminMainFrame extends JFrame {
             new UserAddFrame().setVisible(true);
         });
         
-        // ★ [사용자 목록 조회 연결!] ★
+        // 사용자 목록 조회 연결
         listUser.addActionListener(e -> {
             // 목록창을 엽니다. (UserListFrame 파일이 있어야 함)
             new UserListFrame().setVisible(true); 
