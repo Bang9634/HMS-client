@@ -5,6 +5,7 @@ import javax.swing.SwingUtilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.team3.session.SessionManager;
 import com.team3.ui.MainFrame;
 import com.team3.ui.dialog.LoginDialog;
 
@@ -62,10 +63,10 @@ public class Main {
             loginDialog.setVisible(true);
             
             // 3. 로그인 성공 시에만 메인 프레임 표시
-            if (loginDialog.isLoginSuccess()) {
+            if (SessionManager.getInstance().isLoggedIn()) {
                 logger.info("로그인 성공, 메인 프레임 표시");
                 mainFrame.setVisible(true);
-                mainFrame.updateStatusBar("로그인 사용자: " + loginDialog.getLoggedInUserId());
+                mainFrame.updateStatusBar("로그인 사용자: " + SessionManager.getInstance().getUserName());
             } else {
                 logger.info("로그인 취소, 애플리케이션 종료");
                 System.exit(0);

@@ -31,6 +31,8 @@ import org.slf4j.LoggerFactory;
 import com.team3.client.api.UserApi;
 import com.team3.dto.request.LoginRequest;
 import com.team3.dto.response.ApiResponse;
+import com.team3.session.SessionManager;
+import com.team3.util.JsonUtil;
 
 /**
  * 로그인 다이얼로그
@@ -46,9 +48,6 @@ public class LoginDialog extends JDialog {
     private JPasswordField passwordField;
     private JButton loginButton;
     private JButton cancelButton;
-    
-    private boolean loginSuccess = false;
-    private String loggedInUserId;
     
     public LoginDialog(Frame parent, String serverHost, int serverPort) {
         super(parent, "HMS 로그인", true); // true = 모달
@@ -180,12 +179,16 @@ public class LoginDialog extends JDialog {
                     
                     if (response.isSuccess()) {
                         logger.info("로그인 성공: {}", userId);
-                        loginSuccess = true;
-                        loggedInUserId = userId;
-                        
+                        String responseBody = response.getBody();
+                        SessionManager.getInstance().login(
+                            JsonUtil.extract(responseBody, "token"),
+                            JsonUtil.extract(responseBody, "userId"),
+                            JsonUtil.extract(responseBody, "userName"),
+                            JsonUtil.extract(responseBody, "role")
+                        );
                         JOptionPane.showMessageDialog(
                             LoginDialog.this,
-                            "로그인 성공!\n환영합니다, " + userId + "님",
+                            "로그인 성공!\n환영합니다, " + SessionManager.getInstance().getUserName() + "님",
                             "로그인 성공",
                             JOptionPane.INFORMATION_MESSAGE
                         );
@@ -225,7 +228,6 @@ public class LoginDialog extends JDialog {
         
         if (option == JOptionPane.YES_OPTION) {
             logger.info("사용자가 로그인 취소");
-            loginSuccess = false;
             dispose();
         }
     }
@@ -250,19 +252,5 @@ public class LoginDialog extends JDialog {
             "오류",
             JOptionPane.ERROR_MESSAGE
         );
-    }
-    
-    /**
-     * 로그인 성공 여부
-     */
-    public boolean isLoginSuccess() {
-        return loginSuccess;
-    }
-    
-    /**
-     * 로그인한 사용자 ID
-     */
-    public String getLoggedInUserId() {
-        return loggedInUserId;
     }
 }

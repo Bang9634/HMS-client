@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import com.team3.client.HmsClient;
 import com.team3.dto.request.LoginRequest;
+import com.team3.dto.request.UserListRequest;
 import com.team3.dto.response.ApiResponse;
 
 /**
@@ -91,6 +92,7 @@ public class UserApi extends HmsClient {
                 new LoginRequest(request.getUserId(), request.getPassword()));
             logger.info("로그인 응답: statusCode={}", response.statusCode());
 
+            
             // 응답을 ApiResponse로 변환
             return new ApiResponse(
                 response.statusCode(),
@@ -108,5 +110,13 @@ public class UserApi extends HmsClient {
             Thread.currentThread().interrupt();
             return ApiResponse.error("요청이 중단되었습니다");
         }
+    }
+
+    public ApiResponse getUserList(UserListRequest request) {
+        logger.info("사용자 목록 조회: {}", request);
+
+
+        
+        return null;
     }
 }

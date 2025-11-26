@@ -59,7 +59,7 @@ public class MainFrame extends JFrame {
         tabbedPane.setFont(new Font("맑은 고딕", Font.PLAIN, 13));
         
         // 탭 추가
-        addTab("Health Check", "🏥", new HealthCheckPanel(serverHost, serverPort), "서버 상태 확인");
+        addTab("서버 상태", "🏥", new HealthCheckPanel(serverHost, serverPort), "서버 상태 확인");
         addTab("사용자 관리", "👤", IconUtil.createPlaceholderPanel("사용자 관리"), "로그인 및 회원가입");
         addTab("객실 관리", "🏨", IconUtil.createPlaceholderPanel("객실 관리"), "객실 조회 및 관리");
         addTab("예약 관리", "📅", IconUtil.createPlaceholderPanel("예약 관리"), "예약 조회 및 관리");

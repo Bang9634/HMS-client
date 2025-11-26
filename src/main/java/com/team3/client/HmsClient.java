@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
+import com.team3.session.SessionManager;
 
 /**
  * HMS 서버와 HTTP 통신을 담당하는 기본 클라이언트 클래스
@@ -105,6 +106,7 @@ public class HmsClient {
         
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create(url))
+            .header("Authorization", SessionManager.getInstance().getAuthorizationHeader())
             .GET()
             .build();
         
@@ -157,6 +159,7 @@ public class HmsClient {
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create(url))
             .header("Content-Type", "application/json")
+            .header("Authorization", SessionManager.getInstance().getAuthorizationHeader())
             .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
             .build();
         
