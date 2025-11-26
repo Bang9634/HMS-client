@@ -22,6 +22,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.ListSelectionModel;
+import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
@@ -34,6 +35,7 @@ import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import com.team3.client.api.UserApi;
 import com.team3.dto.response.ApiResponse;
+import com.team3.ui.dialog.AddUserDialog;
 
 /**
  * 사용자 관리 패널
@@ -240,8 +242,9 @@ public class UserManagePanel extends JPanel {
      * 사용자 추가 버튼 클릭 처리
      */
     private void handleAddUser() {
-        JOptionPane.showMessageDialog(this, "사용자 추가 기능은 구현 필요!", "알림", JOptionPane.INFORMATION_MESSAGE);
-        // TODO: 사용자 추가 다이얼로그 구현
+        AddUserDialog dialog = new AddUserDialog(SwingUtilities.getWindowAncestor(this), userApi);
+        dialog.setVisible(true);
+        loadUserList();
     }
 
     /**
