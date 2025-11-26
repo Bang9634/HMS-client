@@ -10,10 +10,12 @@ import javax.swing.JTabbedPane;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.team3.session.SessionManager;
 import com.team3.ui.component.AppMenuBar;
 import com.team3.ui.component.HeaderPanel;
 import com.team3.ui.component.StatusBar;
 import com.team3.ui.panel.HealthCheckPanel;
+import com.team3.ui.panel.UserManagePanel;
 import com.team3.ui.util.IconUtil;
 
 /**
@@ -59,8 +61,11 @@ public class MainFrame extends JFrame {
         tabbedPane.setFont(new Font("맑은 고딕", Font.PLAIN, 13));
         
         // 탭 추가
-        addTab("서버 상태", "🏥", new HealthCheckPanel(serverHost, serverPort), "서버 상태 확인");
-        addTab("사용자 관리", "👤", IconUtil.createPlaceholderPanel("사용자 관리"), "로그인 및 회원가입");
+        // 관리자 권한일 경우만
+        if (SessionManager.getInstance().getRole().equals("ADMIN")) {
+            addTab("서버 상태", "🏥", new HealthCheckPanel(serverHost, serverPort), "서버 상태 확인");
+            addTab("사용자 관리", "👤", new UserManagePanel(serverHost, serverPort), "로그인 및 회원가입");
+        }
         addTab("객실 관리", "🏨", IconUtil.createPlaceholderPanel("객실 관리"), "객실 조회 및 관리");
         addTab("예약 관리", "📅", IconUtil.createPlaceholderPanel("예약 관리"), "예약 조회 및 관리");
         

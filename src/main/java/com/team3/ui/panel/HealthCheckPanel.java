@@ -54,7 +54,7 @@ public class HealthCheckPanel extends JPanel {
         checkButton.setFont(new Font("맑은 고딕", Font.BOLD, 14));
         checkButton.setPreferredSize(new Dimension(200, 40));
         checkButton.setBackground(new Color(52, 152, 219));
-        checkButton.setForeground(Color.WHITE);
+        checkButton.setForeground(Color.BLACK);
         checkButton.setFocusPainted(false);
         checkButton.addActionListener(e -> handleHealthCheck());
         

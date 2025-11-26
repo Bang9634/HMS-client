@@ -8,7 +8,6 @@ import org.slf4j.LoggerFactory;
 
 import com.team3.client.HmsClient;
 import com.team3.dto.request.LoginRequest;
-import com.team3.dto.request.UserListRequest;
 import com.team3.dto.response.ApiResponse;
 
 /**
@@ -112,11 +111,34 @@ public class UserApi extends HmsClient {
         }
     }
 
-    public ApiResponse getUserList(UserListRequest request) {
-        logger.info("사용자 목록 조회: {}", request);
-
-
-        
-        return null;
+    /**
+     * 사용자 목록 전체 조회 시도
+     * 
+     * @return 사용자 목록 전체 정보가 담긴 응답
+     */
+public ApiResponse getUserList() {
+        try {
+            // GET /api/users/get-users 요청 전송
+            logger.info("사용자 목록 조회 시도");
+            HttpResponse<String> response = sendGet("/api/users/get-users");
+            logger.info("사용자 목록 조회 응답: statusCode={}", response.statusCode());
+            logger.debug("응답 본문: {}", response.body());
+            // 응답을 ApiResponse로 변환
+            return new ApiResponse(
+                response.statusCode(),
+                response.body()
+            );
+            
+        } catch (IOException e) {
+            logger.error("네트워크 오류", e);
+            return ApiResponse.error("서버 연결 실패: " + e.getMessage());
+        } catch (InterruptedException e) {
+            // 요청 중 스레드가 인터럽트됨
+            logger.error("요청 중단", e);
+            // 인터럽트 상태 복원
+            // 다른 코드가 인터럽트를 감지할 수 있도록 함
+            Thread.currentThread().interrupt();
+            return ApiResponse.error("요청이 중단되었습니다");
+        }
     }
 }

@@ -106,6 +106,7 @@ public class HmsClient {
         
         HttpRequest request = HttpRequest.newBuilder()
             .uri(URI.create(url))
+            .header("Content-Type", "application/json")
             .header("Authorization", SessionManager.getInstance().getAuthorizationHeader())
             .GET()
             .build();

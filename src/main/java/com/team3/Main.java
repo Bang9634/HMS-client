@@ -1,5 +1,6 @@
 package com.team3;
 
+import javax.swing.JFrame;
 import javax.swing.SwingUtilities;
 
 import org.slf4j.Logger;
@@ -55,16 +56,16 @@ public class Main {
         logger.info("연결 대상: {}:{}", host, port);
     
         SwingUtilities.invokeLater(() -> {
-            // 1. 메인 프레임 생성 (로그인 다이얼로그의 부모용)
-            MainFrame mainFrame = new MainFrame(host, port);
-            
-            // 2. 로그인 다이얼로그 표시
-            LoginDialog loginDialog = new LoginDialog(mainFrame, host, port);
+
+            // 로그인 다이얼로그 표시
+            LoginDialog loginDialog = new LoginDialog(new JFrame(), host, port);
             loginDialog.setVisible(true);
             
-            // 3. 로그인 성공 시에만 메인 프레임 표시
+            
+            // 로그인 성공 시에만 메인 프레임 표시
             if (SessionManager.getInstance().isLoggedIn()) {
                 logger.info("로그인 성공, 메인 프레임 표시");
+                MainFrame mainFrame = new MainFrame(host, port);
                 mainFrame.setVisible(true);
                 mainFrame.updateStatusBar("로그인 사용자: " + SessionManager.getInstance().getUserName());
             } else {
