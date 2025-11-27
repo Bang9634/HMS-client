@@ -15,7 +15,7 @@ public class PaymentTestMain {
         // 1. API 도구 준비 (서버 주소: localhost, 포트: 8080)
         PaymentApi paymentApi = new PaymentApi("localhost", 8080);
 
-        // 2. 가상의 결제 데이터 만들기
+        // 2. 가상의 결제 데이터
         PaymentRequest testRequest = new PaymentRequest(
             "테스터",      // 고객명
             50000,         // 객실료
@@ -32,12 +32,8 @@ public class PaymentTestMain {
         // 4. 결과 확인
         System.out.println("====== [결과 확인] ======");
         
-        // getStatus() -> getStatusCode() 로 변경 (추정)
-        // 만약 여기서도 빨간줄이 뜨면 getStatus() 대신 getCode() 인지 확인 필요
         System.out.println("상태 코드: " + response.getStatusCode()); 
         
-        // getData() -> getBody() 로 변경 (추정)
-        // 만약 여기서도 빨간줄이 뜨면 getMessage() 인지 확인 필요
         System.out.println("서버 메시지: " + response.getBody()); 
         
         System.out.println("=========================");
@@ -47,7 +43,6 @@ public class PaymentTestMain {
         System.out.println("\n>> 전체 내역 조회를 시도합니다...");
         ApiResponse historyResponse = paymentApi.getPaymentHistory();
         
-        // getData() -> getBody() 로 변경
         System.out.println("내역 조회 결과: " + historyResponse.getBody());
     }
 }
