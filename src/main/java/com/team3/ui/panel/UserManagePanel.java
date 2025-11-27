@@ -37,6 +37,7 @@ import com.team3.client.api.UserApi;
 import com.team3.dto.request.DeleteUserRequest;
 import com.team3.dto.response.ApiResponse;
 import com.team3.ui.dialog.AddUserDialog;
+import com.team3.util.JsonUtil;
 
 /**
  * 사용자 관리 패널
@@ -264,7 +265,10 @@ public class UserManagePanel extends JPanel {
         String userId = (String) tableModel.getValueAt(row, 0);
         int confirm = JOptionPane.showConfirmDialog(this, "정말로 사용자 [" + userId + "]를 삭제하시겠습니까?", "삭제 확인", JOptionPane.YES_NO_OPTION);
         if (confirm == JOptionPane.YES_OPTION) {
-            userApi.deleteUser(new DeleteUserRequest(userId));
+            ApiResponse response = userApi.deleteUser(new DeleteUserRequest(userId));
+            if (response.getStatusCode() != 200) {
+                JOptionPane.showConfirmDialog(this, JsonUtil.extract(response.getBody(),"message"), "삭제 실패", JOptionPane.CLOSED_OPTION);
+            }
         }
         loadUserList();
     }
