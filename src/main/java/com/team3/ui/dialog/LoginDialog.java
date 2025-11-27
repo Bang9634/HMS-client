@@ -197,7 +197,7 @@ public class LoginDialog extends JDialog {
                         
                     } else {
                         logger.warn("로그인 실패: {}", response.getBody());
-                        showError("로그인 실패\n" + response.getBody());
+                        showError("로그인 실패\n" + response.getMessage());
                         passwordField.setText("");
                         passwordField.requestFocus();
                     }

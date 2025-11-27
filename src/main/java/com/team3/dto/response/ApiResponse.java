@@ -1,5 +1,7 @@
 package com.team3.dto.response;
 
+import com.team3.util.JsonUtil;
+
 /**
  * API 응답을 나타내는 DTO 클래스
  * <p>
@@ -70,4 +72,7 @@ public class ApiResponse {
     public int getStatusCode() { return statusCode; }
     public String getBody() { return body; }
     public boolean isSuccess() { return success; }
+    public String getMessage() {
+        return JsonUtil.extract(body, "message");
+    }
 }

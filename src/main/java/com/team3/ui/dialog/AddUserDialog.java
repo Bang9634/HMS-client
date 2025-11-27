@@ -150,7 +150,7 @@ public class AddUserDialog extends JDialog {
                         JOptionPane.showMessageDialog(AddUserDialog.this, "사용자 추가 성공!", "알림", JOptionPane.INFORMATION_MESSAGE);
                         dispose();
                     } else {
-                        statusLabel.setText("추가 실패: " + response.getBody());
+                        statusLabel.setText("추가 실패: " + response.getMessage());
                         statusLabel.setForeground(new Color(192, 57, 43));
                     }
                 } catch (HeadlessException | InterruptedException | ExecutionException e) {
