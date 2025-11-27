@@ -61,7 +61,7 @@ public class UserManagePanel extends JPanel {
     private JProgressBar progressBar;
 
     private static final String[] COLUMN_NAMES = {
-        "아이디", "이름", "비밀번호", "권한", "생성일", "수정일", "수정", "삭제"
+        "아이디", "이름", "비밀번호", "권한", "생성일", "수정일", "삭제"
     };
 
     public UserManagePanel(String serverHost, int serverPort) {
@@ -108,8 +108,6 @@ public class UserManagePanel extends JPanel {
         userTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
         // 수정/삭제 버튼 렌더러 및 에디터
-        userTable.getColumn("수정").setCellRenderer(new ButtonRenderer("수정", new Color(241, 196, 15)));
-        userTable.getColumn("수정").setCellEditor(new ButtonEditor("수정", this::handleEditUser));
         userTable.getColumn("삭제").setCellRenderer(new ButtonRenderer("삭제", new Color(231, 76, 60)));
         userTable.getColumn("삭제").setCellEditor(new ButtonEditor("삭제", this::handleDeleteUser));
 
@@ -247,15 +245,6 @@ public class UserManagePanel extends JPanel {
         AddUserDialog dialog = new AddUserDialog(SwingUtilities.getWindowAncestor(this), userApi);
         dialog.setVisible(true);
         loadUserList();
-    }
-
-    /**
-     * 사용자 수정 버튼 클릭 처리
-     */
-    private void handleEditUser(int row) {
-        String userId = (String) tableModel.getValueAt(row, 0);
-        JOptionPane.showMessageDialog(this, "사용자 수정 기능은 구현 필요!\nID: " + userId, "알림", JOptionPane.INFORMATION_MESSAGE);
-        // TODO: 사용자 수정 다이얼로그 구현
     }
 
     /**
