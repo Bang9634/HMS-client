@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
  * [결제 API 클라이언트]
  * - 역할: 서버의 결제 관련 URL(/api/payments/...)로 요청을 보내고 응답을 받음.
  * - HmsClient를 상속 -> sendPost, sendGet 기능 사용
+ * @author 김현준
  */
 public class PaymentApi extends HmsClient {
 
