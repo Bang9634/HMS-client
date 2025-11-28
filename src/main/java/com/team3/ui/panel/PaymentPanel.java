@@ -22,6 +22,11 @@ import com.team3.dto.request.PaymentRequest;
 import com.team3.dto.response.ApiResponse;
 import com.team3.dto.response.Payment;
 
+/**
+ * @author 김현준
+ * @since 2025-11-28
+ */
+
 public class PaymentPanel extends JPanel {
     
     private static final Logger logger = LoggerFactory.getLogger(PaymentPanel.class);
