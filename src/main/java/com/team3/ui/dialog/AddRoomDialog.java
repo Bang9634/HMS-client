@@ -48,7 +48,6 @@ public class AddRoomDialog extends JDialog {
     private JTextField basePriceField;
     private JComboBox<String> isAvailableComboBox;
     private JTextField maxOccupancyField;
-    private JTextField priceChangeReasonField;
     private JButton addButton;
     private JButton cancelButton;
 
@@ -78,7 +77,6 @@ public class AddRoomDialog extends JDialog {
         basePriceField = new JTextField(16);
         isAvailableComboBox = new JComboBox<>(new String[] { "비어있음", "점유중" });
         maxOccupancyField = new JTextField(16);
-        priceChangeReasonField = new JTextField(16);
 
         addButton = new JButton("추가");
         addButton.setPreferredSize(new Dimension(100, 35));
@@ -150,14 +148,6 @@ public class AddRoomDialog extends JDialog {
         gbc.gridx = 1;
         mainPanel.add(maxOccupancyField, gbc);
 
-        // 금액변경사유
-        gbc.gridx = 0; gbc.gridy++;
-        JLabel priceChangeReasonLabel = new JLabel("금액 변경 사유:");
-        priceChangeReasonLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 12));
-        mainPanel.add(priceChangeReasonLabel, gbc);
-        gbc.gridx = 1;
-        mainPanel.add(priceChangeReasonField, gbc);
-
         // 버튼 패널
         gbc.gridx = 0; gbc.gridy++; gbc.gridwidth = 2;
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
@@ -177,7 +167,6 @@ public class AddRoomDialog extends JDialog {
         String basePriceText = basePriceField.getText().trim();
         String isAvailableText = (String) isAvailableComboBox.getSelectedItem();
         String maxOccupancyText = maxOccupancyField.getText().trim();
-        String priceChangeReason = priceChangeReasonField.getText().trim();
 
         if (roomNumberText.isEmpty() || basePriceText.isEmpty() || maxOccupancyText.isEmpty()) {
             showError("모든 필수 항목을 입력하세요.");
@@ -201,7 +190,7 @@ public class AddRoomDialog extends JDialog {
         SwingWorker<ApiResponse, Void> worker = new SwingWorker<>() {
             @Override
             protected ApiResponse doInBackground() {
-                AddRoomRequest req = new AddRoomRequest(roomId, basePrice, isAvailable, maxOccupancy, priceChangeReason);
+                AddRoomRequest req = new AddRoomRequest(roomId, basePrice, isAvailable, maxOccupancy);
                 return roomApi.addRoom(req);
             }
 
