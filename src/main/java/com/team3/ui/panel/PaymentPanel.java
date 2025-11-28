@@ -6,7 +6,10 @@ import java.lang.reflect.Type;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.List;
+
+// [중요] java.util.List를 명시적으로 import합니다.
+import java.util.List; 
+import java.util.ArrayList;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -18,15 +21,17 @@ import org.slf4j.LoggerFactory;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.team3.client.api.PaymentApi;
-import com.team3.dto.request.PaymentRequest;
 import com.team3.dto.response.ApiResponse;
 import com.team3.dto.response.Payment;
 
 /**
- * @author 김현준
- * @since 2025-11-28
+ * 결제 관리 UI 패널
+ * <p>
+ * 결제 정보 입력, 승인 요청, 내역 조회 및 영수증 출력을 담당하는 화면이다.
+ * 백그라운드 작업은 SwingWorker를 사용하여 UI 멈춤을 방지한다.
+ * </p>
+ * * @author 김현준
  */
-
 public class PaymentPanel extends JPanel {
     
     private static final Logger logger = LoggerFactory.getLogger(PaymentPanel.class);
@@ -43,9 +48,10 @@ public class PaymentPanel extends JPanel {
     private JComboBox<String> methodCombo;
     private JTextArea resultArea;
     
-    private JButton payButton; // 결제 승인
-    private JButton historyButton; // 내역 조회
-    private JButton deleteButton; // 삭제 버튼
+    private JButton payButton; // 결제 승인 버튼
+    private JButton historyButton; // 구매 내역 버튼
+    private JButton deleteButton; // 전체 삭제 버튼
+    private JButton selectDeleteButton; // 선택 삭제 버튼
     
     public PaymentPanel(String serverHost, int serverPort){
         this.paymentApi = new PaymentApi(serverHost, serverPort);
@@ -58,7 +64,7 @@ public class PaymentPanel extends JPanel {
     }
     
     private void initComponents() {
-        // 1. 왼쪽 - 입력 폼
+        // 1. 왼쪽 - 입력 폼 패널
         JPanel formPanel = new JPanel(new GridBagLayout());
         formPanel.setBackground(Color.WHITE);
         formPanel.setBorder(BorderFactory.createTitledBorder(
@@ -74,7 +80,7 @@ public class PaymentPanel extends JPanel {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.anchor = GridBagConstraints.WEST;
 
-        // 입력 필드 배치
+        // 입력 필드들 배치
         addFormField(formPanel, gbc, 0, "고객명:", guestNameField = new JTextField(15));
         
         roomChargeField = new JTextField("0", 15);
@@ -91,28 +97,26 @@ public class PaymentPanel extends JPanel {
         cardNumField = new JTextField(15);
         addFormField(formPanel, gbc, 4, "카드 번호:", cardNumField);
 
-
         // 버튼 패널
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         buttonPanel.setBackground(Color.WHITE);
 
         payButton = createStyledButton("결제 승인", new Color(52, 152, 219)); // 파란색
         historyButton = createStyledButton("매출/내역", new Color(46, 204, 113)); // 초록색
-        
-        // 초기화(삭제) 버튼 생성 (빨간색)
-        deleteButton = createStyledButton("초기화", new Color(231, 76, 60)); 
+        deleteButton = createStyledButton("전체 초기화", new Color(231, 76, 60)); // 빨간색
+        selectDeleteButton = createStyledButton("선택 삭제", new Color(243, 156, 18)); // 주황색
 
         payButton.addActionListener(this::handlePayment);
         historyButton.addActionListener(this::handleHistory);
-        
-        // 삭제 버튼 액션 연결
         deleteButton.addActionListener(this::handleDelete);
+        selectDeleteButton.addActionListener(this::handleSelectDelete);
 
         buttonPanel.add(payButton);
         buttonPanel.add(historyButton);
+        buttonPanel.add(selectDeleteButton); // [New]
         buttonPanel.add(deleteButton);
 
-        // 폼 패널 하단에 버튼 추가
+        // 버튼 패널 배치
         gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 2;
         gbc.anchor = GridBagConstraints.CENTER;
         formPanel.add(buttonPanel, gbc);
@@ -134,7 +138,6 @@ public class PaymentPanel extends JPanel {
         resultArea.setFont(new Font("Monospaced", Font.PLAIN, 12)); 
         resultPanel.add(new JScrollPane(resultArea), BorderLayout.CENTER);
 
-
         // 3. 메인 배치
         add(formPanel, BorderLayout.WEST);
         add(resultPanel, BorderLayout.CENTER);
@@ -152,7 +155,7 @@ public class PaymentPanel extends JPanel {
 
     private JButton createStyledButton(String text, Color color) {
         JButton btn = new JButton(text);
-        btn.setPreferredSize(new Dimension(90, 35)); // 버튼 크기 조절
+        btn.setPreferredSize(new Dimension(95, 35));
         btn.setBackground(color);
         btn.setForeground(Color.WHITE);
         btn.setFont(new Font("맑은 고딕", Font.BOLD, 12));
@@ -192,7 +195,7 @@ public class PaymentPanel extends JPanel {
         final int roomPrice = tempRoom;
         final int foodPrice = tempFood;
         
-        PaymentRequest request = new PaymentRequest(name, roomPrice, foodPrice, method, cardNum);
+        Payment request = new Payment(name, roomPrice, foodPrice, method, cardNum);
 
         setButtonsEnabled(false);
         resultArea.setText(""); 
@@ -226,8 +229,8 @@ public class PaymentPanel extends JPanel {
                         JOptionPane.showMessageDialog(PaymentPanel.this, "결제 실패: " + response.getBody());
                     }
                 } catch (Exception ex) {
-                    logger.error("오류", ex);
-                    resultArea.append("[오류] " + ex.getMessage() + "\n");
+                    logger.error("결제 처리 중 오류", ex);
+                    resultArea.append("[오류] " + ex.getMessage() + "\n\n");
                 } finally {
                     setButtonsEnabled(true);
                 }
@@ -254,8 +257,9 @@ public class PaymentPanel extends JPanel {
                     ApiResponse response = get();
                     if (response.isSuccess()) {
                         String jsonBody = response.getBody();
-                        Type listType = new TypeToken<List<Payment>>(){}.getType();
-                        List<Payment> paymentList = gson.fromJson(jsonBody, listType);
+                        
+                        Type listType = new TypeToken<java.util.List<Payment>>(){}.getType();
+                        java.util.List<Payment> paymentList = gson.fromJson(jsonBody, listType);
 
                         resultArea.setText(""); 
 
@@ -285,7 +289,7 @@ public class PaymentPanel extends JPanel {
                         resultArea.append("[조회 실패] " + response.getBody() + "\n");
                     }
                 } catch (Exception ex) {
-                    logger.error("오류", ex);
+                    logger.error("내역 조회 중 오류", ex);
                     resultArea.append("[오류] 데이터 변환 실패: " + ex.getMessage() + "\n");
                 } finally {
                     setButtonsEnabled(true);
@@ -295,7 +299,7 @@ public class PaymentPanel extends JPanel {
         worker.execute();
     }
 
-    /** 3. 내역 삭제(초기화) 처리 */
+    /** 3. 내역 삭제(전체 초기화) 처리 */
     private void handleDelete(ActionEvent e) {
         int confirm = JOptionPane.showConfirmDialog(this, 
             "정말 모든 결제 내역을 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.", 
@@ -310,7 +314,6 @@ public class PaymentPanel extends JPanel {
         SwingWorker<ApiResponse, Void> worker = new SwingWorker<>() {
             @Override
             protected ApiResponse doInBackground() {
-                // PaymentApi에 deletePaymentHistory()가 있어야 함!
                 return paymentApi.deletePaymentHistory();
             }
 
@@ -335,6 +338,46 @@ public class PaymentPanel extends JPanel {
         worker.execute();
     }
     
+    /** 4. 선택 삭제 처리 */
+    private void handleSelectDelete(ActionEvent e) {
+        String nameToDelete = JOptionPane.showInputDialog(this, 
+            "삭제할 고객명을 입력하세요:", "선택 삭제", JOptionPane.QUESTION_MESSAGE);
+
+        if (nameToDelete == null || nameToDelete.trim().isEmpty()) {
+            return;
+        }
+
+        setButtonsEnabled(false);
+        resultArea.setText("");
+        resultArea.append(">> '" + nameToDelete + "'님의 내역 삭제 중...\n");
+
+        SwingWorker<ApiResponse, Void> worker = new SwingWorker<>() {
+            @Override
+            protected ApiResponse doInBackground() {
+                return paymentApi.deletePaymentByGuestName(nameToDelete);
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    ApiResponse response = get();
+                    if (response.isSuccess()) {
+                        JOptionPane.showMessageDialog(PaymentPanel.this, "삭제 완료되었습니다.");
+                        resultArea.append("[완료] " + response.getBody() + "\n");
+                        handleHistory(null); // 목록 갱신
+                    } else {
+                        resultArea.append("[실패] " + response.getBody() + "\n");
+                    }
+                } catch (Exception ex) {
+                    resultArea.append("[오류] " + ex.getMessage() + "\n");
+                } finally {
+                    setButtonsEnabled(true);
+                }
+            }
+        };
+        worker.execute();
+    }
+
     // 영수증 포맷팅 (과거 내역용)
     private String formatReceipt(Payment p) {
         StringBuilder sb = new StringBuilder();
@@ -345,12 +388,12 @@ public class PaymentPanel extends JPanel {
         sb.append(String.format(" 고 객 명 : %s\n", p.getGuestName()));
         sb.append("------------------------------------------\n");
         sb.append(String.format(" 결제내역 : %s\n", p.getDetails())); 
-        sb.append(String.format(" 결제수단 : %s\n", p.getMethod()));  
+        sb.append(String.format(" 결제수단 : %s\n", p.getMethod()));
         
-        if(!"N/A".equals(p.getCardNumber())){
+        // 카드번호가 "N/A"가 아니면 표시
+        if (!"N/A".equals(p.getCardNumber())) {
             sb.append(String.format(" 카드번호 : %s\n", p.getCardNumber()));
         }
-        
         sb.append("------------------------------------------\n");
         sb.append(String.format(" 청구금액 : %24s 원\n", formatter.format(p.getTotalAmount())));
         sb.append("==========================================\n");
@@ -371,10 +414,10 @@ public class PaymentPanel extends JPanel {
         sb.append("------------------------------------------\n");
         sb.append(String.format(" 결제수단 : %s\n", method));   
         
-        if(cardNum != null && !cardNum.isEmpty()){
+        // 카드번호가 입력되었으면 표시
+        if (cardNum != null && !cardNum.isEmpty()) {
             sb.append(String.format(" 카드번호 : %s\n", cardNum));
         }
-        
         sb.append("------------------------------------------\n");
         sb.append(String.format(" 결제금액 : %24s 원\n", formatter.format(total)));
         sb.append("==========================================\n");
@@ -382,10 +425,10 @@ public class PaymentPanel extends JPanel {
         return sb.toString();
     }
 
-    // 내역 삭제
     private void setButtonsEnabled(boolean enabled) {
         payButton.setEnabled(enabled);
         historyButton.setEnabled(enabled);
         deleteButton.setEnabled(enabled);
+        selectDeleteButton.setEnabled(enabled);
     }
 }
