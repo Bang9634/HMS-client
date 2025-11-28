@@ -6,10 +6,7 @@ import java.lang.reflect.Type;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-
-// [중요] java.util.List를 명시적으로 import합니다.
-import java.util.List; 
-import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -26,10 +23,6 @@ import com.team3.dto.response.Payment;
 
 /**
  * 결제 관리 UI 패널
- * <p>
- * 결제 정보 입력, 승인 요청, 내역 조회 및 영수증 출력을 담당하는 화면이다.
- * 백그라운드 작업은 SwingWorker를 사용하여 UI 멈춤을 방지한다.
- * </p>
  * * @author 김현준
  */
 public class PaymentPanel extends JPanel {
@@ -48,10 +41,10 @@ public class PaymentPanel extends JPanel {
     private JComboBox<String> methodCombo;
     private JTextArea resultArea;
     
-    private JButton payButton; // 결제 승인 버튼
-    private JButton historyButton; // 구매 내역 버튼
-    private JButton deleteButton; // 전체 삭제 버튼
-    private JButton selectDeleteButton; // 선택 삭제 버튼
+    private JButton payButton;
+    private JButton historyButton;
+    private JButton deleteButton; 
+    private JButton selectDeleteButton; 
     
     public PaymentPanel(String serverHost, int serverPort){
         this.paymentApi = new PaymentApi(serverHost, serverPort);
@@ -113,7 +106,7 @@ public class PaymentPanel extends JPanel {
 
         buttonPanel.add(payButton);
         buttonPanel.add(historyButton);
-        buttonPanel.add(selectDeleteButton); // [New]
+        buttonPanel.add(selectDeleteButton); 
         buttonPanel.add(deleteButton);
 
         // 버튼 패널 배치
@@ -195,6 +188,15 @@ public class PaymentPanel extends JPanel {
         final int roomPrice = tempRoom;
         final int foodPrice = tempFood;
         
+        // 영수증에 찍을 '결제 내용'을 여기서 미리 결정합니다.
+        String tempDetails = "RoomOnly";
+        if (roomPrice == 0 && foodPrice > 0) {
+            tempDetails = "Walk-in(Food)";
+        } else if (roomPrice > 0 && foodPrice > 0) {
+            tempDetails = "Room+Food";
+        }
+        final String details = tempDetails;
+        
         Payment request = new Payment(name, roomPrice, foodPrice, method, cardNum);
 
         setButtonsEnabled(false);
@@ -215,8 +217,9 @@ public class PaymentPanel extends JPanel {
                         JOptionPane.showMessageDialog(PaymentPanel.this, "결제 성공!");
                         
                         resultArea.setText(""); 
-                        // 즉석 영수증 출력
-                        String receipt = makeCurrentReceipt(name, roomPrice + foodPrice, method, cardNum);
+                        
+                        String receipt = makeCurrentReceipt(name, roomPrice + foodPrice, method, cardNum, details);
+                        
                         resultArea.append(receipt);
                         
                         // 입력창 초기화
@@ -257,9 +260,8 @@ public class PaymentPanel extends JPanel {
                     ApiResponse response = get();
                     if (response.isSuccess()) {
                         String jsonBody = response.getBody();
-                        
-                        Type listType = new TypeToken<java.util.List<Payment>>(){}.getType();
-                        java.util.List<Payment> paymentList = gson.fromJson(jsonBody, listType);
+                        Type listType = new TypeToken<List<Payment>>(){}.getType();
+                        List<Payment> paymentList = gson.fromJson(jsonBody, listType);
 
                         resultArea.setText(""); 
 
@@ -401,17 +403,19 @@ public class PaymentPanel extends JPanel {
     }
 
     // 즉석 영수증 포맷팅 (방금 결제용)
-    private String makeCurrentReceipt(String name, int total, String method, String cardNum) {
+    private String makeCurrentReceipt(String name, int total, String method, String cardNum, String details) {
         String nowTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
         
         StringBuilder sb = new StringBuilder();
-        sb.append("********** [방금 승인된 결제] **********\n"); 
+        sb.append("*********** [방금 승인된 결제] ***********\n"); 
         sb.append("==========================================\n");
         sb.append("               [영  수  증]               \n");
         sb.append("==========================================\n");
         sb.append(String.format(" 승인일시 : %s\n", nowTime));
         sb.append(String.format(" 고 객 명 : %s\n", name));
         sb.append("------------------------------------------\n");
+        // [수정] 전달받은 details를 출력
+        sb.append(String.format(" 결제내역 : %s\n", details)); 
         sb.append(String.format(" 결제수단 : %s\n", method));   
         
         // 카드번호가 입력되었으면 표시
