@@ -20,6 +20,7 @@ public class Payment {
     public int getTotalAmount() { return totalAmount; }
     public String getDetails() { return details; }
     public String getMethod() { return method; }
+    public String getCardNumber() { return cardNumber; }
     public String getPaymentTime() { return paymentTime; }
 
     /**
