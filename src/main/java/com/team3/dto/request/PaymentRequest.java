@@ -3,6 +3,7 @@ package com.team3.dto.request;
 /**
  * [결제 요청 DTO]
  * 클라이언트가 서버에게 결제 요청
+ * @author 김현준
  */
 public class PaymentRequest {
     
