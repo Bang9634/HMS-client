@@ -2,13 +2,14 @@ package com.team3.ui.dialog;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.HeadlessException;
 import java.awt.Insets;
 import java.awt.Window;
+import java.util.concurrent.ExecutionException;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -24,6 +25,7 @@ import com.team3.dto.request.AddReservationRequest;
 import com.team3.dto.request.UpdateReservationRequest;
 import com.team3.dto.response.ApiResponse;
 import com.team3.model.Reservation;
+import java.awt.Component;
 
 public class AddReservationDialog extends JDialog {
 
@@ -39,17 +41,13 @@ public class AddReservationDialog extends JDialog {
     private JLabel statusLabel;
 
     private final ReservationApi reservationApi;
-    
-    // 수정 모드 관련 변수
     private Reservation existingReservation = null; 
     private boolean isEditMode = false;
 
-    // 1. 기본 생성자 (추가용)
     public AddReservationDialog(Window parent, ReservationApi reservationApi) {
         this(parent, reservationApi, null);
     }
 
-    // 2. [수정] 통합 생성자 (수정용 데이터 받음)
     public AddReservationDialog(Window parent, ReservationApi reservationApi, Reservation reservation) {
         super(parent, reservation == null ? "예약 추가" : "예약 수정", ModalityType.APPLICATION_MODAL);
         this.reservationApi = reservationApi;
@@ -59,10 +57,9 @@ public class AddReservationDialog extends JDialog {
         initComponents();
         setupLayout();
         
-        // 수정 모드면 데이터 채우기
-        if (isEditMode) {
-            fillData();
-        }
+        if (isEditMode) fillData();
+        
+        
         
         pack();
         setLocationRelativeTo(parent);
@@ -76,16 +73,15 @@ public class AddReservationDialog extends JDialog {
         checkOutField = new JTextField(15);
         guestCountField = new JTextField("2", 15);
 
-        // 버튼 텍스트 변경 (예약하기 / 수정완료)
         okButton = new JButton(isEditMode ? "수정완료" : "예약하기");
-        okButton.setBackground(new Color(39, 174, 96));
-        okButton.setForeground(Color.WHITE);
+        okButton.setBackground(new Color(39, 174, 96)); // 녹색
+        okButton.setForeground(Color.BLACK);
         okButton.setFont(new Font("맑은 고딕", Font.BOLD, 13));
         okButton.addActionListener(e -> handleSubmit());
 
         cancelButton = new JButton("취소");
-        cancelButton.setBackground(new Color(192, 57, 43));
-        cancelButton.setForeground(Color.WHITE);
+        cancelButton.setBackground(new Color(192, 57, 43)); // 빨간색
+        cancelButton.setForeground(Color.BLACK);
         cancelButton.setFont(new Font("맑은 고딕", Font.BOLD, 13));
         cancelButton.addActionListener(e -> dispose());
 
@@ -128,7 +124,6 @@ public class AddReservationDialog extends JDialog {
         panel.add(comp, gbc);
     }
 
-    // [추가] 기존 데이터를 입력창에 채워넣는 메서드
     private void fillData() {
         roomIdField.setText(existingReservation.getRoomId());
         guestNameField.setText(existingReservation.getGuestName());
@@ -138,20 +133,22 @@ public class AddReservationDialog extends JDialog {
         guestCountField.setText(String.valueOf(existingReservation.getGuestCount()));
     }
 
-    // [수정] 추가/수정 분기 처리
     private void handleSubmit() {
+        // ... (기존 로직 유지) ...
         try {
             String roomId = roomIdField.getText().trim();
             String guestName = guestNameField.getText().trim();
             String phone = phoneField.getText().trim();
             String checkIn = checkInField.getText().trim();
             String checkOut = checkOutField.getText().trim();
-            int guestCount = Integer.parseInt(guestCountField.getText().trim());
+            String guestCountStr = guestCountField.getText().trim();
 
             if (roomId.isEmpty() || guestName.isEmpty()) {
                 statusLabel.setText("필수 정보를 입력하세요.");
+                statusLabel.setForeground(new Color(192, 57, 43));
                 return;
             }
+            int guestCount = Integer.parseInt(guestCountStr);
 
             okButton.setEnabled(false);
             statusLabel.setText("처리 중...");
@@ -159,22 +156,18 @@ public class AddReservationDialog extends JDialog {
             SwingWorker<ApiResponse, Void> worker = new SwingWorker<>() {
                 @Override protected ApiResponse doInBackground() {
                     if (isEditMode) {
-                        // [수정 요청]
                         UpdateReservationRequest req = new UpdateReservationRequest(
-                            existingReservation.getId(), // ID 필수!
-                            existingReservation.getUserId(),
+                            existingReservation.getId(), existingReservation.getUserId(),
                             roomId, guestName, phone, checkIn, checkOut, guestCount
                         );
                         return reservationApi.updateReservation(req);
                     } else {
-                        // [생성 요청]
                         AddReservationRequest req = new AddReservationRequest(
                             roomId, guestName, phone, checkIn, checkOut, guestCount
                         );
                         return reservationApi.createReservation(req);
                     }
                 }
-
                 @Override protected void done() {
                     okButton.setEnabled(true);
                     try {
@@ -184,16 +177,18 @@ public class AddReservationDialog extends JDialog {
                             dispose();
                         } else {
                             statusLabel.setText("실패: " + response.getBody());
+                            statusLabel.setForeground(new Color(192, 57, 43));
                         }
                     } catch (Exception e) {
                         statusLabel.setText("오류: " + e.getMessage());
+                        statusLabel.setForeground(new Color(192, 57, 43));
                     }
                 }
             };
             worker.execute();
-
         } catch (NumberFormatException e) {
             statusLabel.setText("인원 수는 숫자여야 합니다.");
+            statusLabel.setForeground(new Color(192, 57, 43));
         }
     }
 }
