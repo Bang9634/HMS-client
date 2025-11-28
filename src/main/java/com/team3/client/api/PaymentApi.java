@@ -89,4 +89,25 @@ public class PaymentApi extends HmsClient {
             return ApiResponse.error("오류 발생");
         }
     }
+    
+    /**
+     * 3. 모든 결제 내역 삭제 (DELETE)
+     * @return 처리 결과 응답
+     */
+    public ApiResponse deletePaymentHistory() {
+        try {
+            logger.info("결제 내역 초기화 요청");
+            // HmsClient에 추가한 sendDelete 사용
+            HttpResponse<String> response = sendDelete("/api/payments/history");
+            return new ApiResponse(response.statusCode(), response.body());
+
+        } catch (IOException e) {
+            logger.error("통신 오류", e);
+            return ApiResponse.error("서버 연결 실패");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return ApiResponse.error("요청 중단됨");
+        }
+    }
+    
 }
