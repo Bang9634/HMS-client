@@ -69,6 +69,9 @@ public class MainFrame extends JFrame {
         addTab("객실 관리", "🏨", IconUtil.createPlaceholderPanel("객실 관리"), "객실 조회 및 관리");
         addTab("예약 관리", "📅", IconUtil.createPlaceholderPanel("예약 관리"), "예약 조회 및 관리");
         
+        // 결제 관리
+        addTab("결제 관리", "💳", new com.team3.ui.panel.PaymentPanel(serverHost, serverPort), "결제 및 체크아웃");
+        
         // 메뉴바 생성
         AppMenuBar menuBar = new AppMenuBar(this, tabbedPane, serverHost, serverPort);
         setJMenuBar(menuBar);
