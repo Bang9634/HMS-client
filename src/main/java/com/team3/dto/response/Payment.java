@@ -4,6 +4,7 @@ package com.team3.dto.response;
  * [결제 응답 모델]
  * 서버에서 "결제 내역 조회"를 했을 때 돌아오는 JSON 데이터를 담는 클래스
  * - 서버가 보내주는 JSON 키값(key)과 변수명이 일치해야 함
+ * @author 김현준
  */
 public class Payment {
     
