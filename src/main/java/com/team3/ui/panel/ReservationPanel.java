@@ -30,7 +30,7 @@ public class ReservationPanel extends JPanel {
 
     // [수정] 컬럼에 "수정" 추가
     private static final String[] COLUMN_NAMES = {
-        "예약ID", "객실번호", "예약자명", "전화번호", "체크인", "체크아웃", "인원", "수정", "취소"
+        "예약ID", "객실번호", "예약자명", "전화번호", "체크인", "체크아웃", "인원", "예약변경", "예약취소"
     };
 
     public ReservationPanel(String serverHost, int serverPort) {
@@ -63,12 +63,12 @@ public class ReservationPanel extends JPanel {
         reservationTable.setRowHeight(32);
         
         // [추가] "수정" 버튼 렌더러/에디터 (노란색)
-        reservationTable.getColumn("수정").setCellRenderer(new ButtonRenderer("수정", new Color(241, 196, 15)));
-        reservationTable.getColumn("수정").setCellEditor(new ButtonEditor("수정", this::handleEditReservation));
+        reservationTable.getColumn("예약변경").setCellRenderer(new ButtonRenderer("예약변경", new Color(241, 196, 15)));
+        reservationTable.getColumn("예약변경").setCellEditor(new ButtonEditor("예약변경", this::handleEditReservation));
 
         // [기존] "취소" 버튼 렌더러/에디터 (빨간색)
-        reservationTable.getColumn("취소").setCellRenderer(new ButtonRenderer("취소", new Color(231, 76, 60)));
-        reservationTable.getColumn("취소").setCellEditor(new ButtonEditor("취소", this::handleCancelReservation));
+        reservationTable.getColumn("예약취소").setCellRenderer(new ButtonRenderer("예약취소", new Color(231, 76, 60)));
+        reservationTable.getColumn("예약취소").setCellEditor(new ButtonEditor("예약취소", this::handleCancelReservation));
 
         // ID 컬럼 숨기기
         reservationTable.getColumnModel().getColumn(0).setMinWidth(0);
