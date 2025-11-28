@@ -6,6 +6,8 @@ import javax.swing.SwingUtilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.formdev.flatlaf.FlatLightLaf;
+import com.formdev.flatlaf.themes.FlatMacLightLaf;
 import com.team3.session.SessionManager;
 import com.team3.ui.MainFrame;
 import com.team3.ui.dialog.LoginDialog;
@@ -55,6 +57,7 @@ public class Main {
         logger.info("HMS 클라이언트 애플리케이션 시작");
         logger.info("연결 대상: {}:{}", host, port);
     
+        FlatMacLightLaf.setup();
         SwingUtilities.invokeLater(() -> {
 
             // 로그인 다이얼로그 표시
