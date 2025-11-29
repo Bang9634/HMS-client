@@ -167,6 +167,39 @@ public class HmsClient {
         return httpClient.send(request,
             HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
     }
+    
+    /**
+     * HTTP DELETE 요청을 서버에 전송한다
+     * <p>
+     * 지정된 엔드포인트로 DELETE 요청을 보내고 응답을 반환한다.
+     * 주로 리소스 삭제(예: 결제 내역 초기화)에 사용된다.
+     * </p>
+     * * <h4>사용 예시:</h4>
+     * <pre>{@code
+     * HttpResponse<String> response = sendDelete("/api/payments/history");
+     * }</pre>
+     * * @param endpoint API 엔드포인트 경로 (예: "/api/payments/history")
+     * @return HTTP 응답 객체
+     * * @throws IOException 네트워크 오류 발생 시
+     * @throws InterruptedException 요청 중 스레드가 인터럽트된 경우
+     */
+    protected HttpResponse<String> sendDelete(String endpoint) 
+            throws IOException, InterruptedException {
+        String url = serverUrl + endpoint;
+        logger.debug("DELETE 요청: {}", url);
+        
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(URI.create(url))
+            .header("Content-Type", "application/json")
+            .header("Authorization", SessionManager.getInstance().getAuthorizationHeader())
+            .DELETE()
+            .build();
+        
+        return httpClient.send(request, 
+            HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+    }
+    
+    
 
     /**
      * 서버의 기본 URL을 반환한다
