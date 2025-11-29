@@ -6,11 +6,18 @@ import java.lang.reflect.Type;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+
+// java.util.List를 명시적으로 import (awt.List와 충돌 방지)
 import java.util.List;
+import java.util.ArrayList;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DocumentFilter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +30,11 @@ import com.team3.dto.response.Payment;
 
 /**
  * 결제 관리 UI 패널
- * * @author 김현준
+ * <p>
+ * 결제 정보 입력, 승인 요청, 내역 조회 및 영수증 출력을 담당하는 화면이다.
+ * 백그라운드 작업은 SwingWorker를 사용하여 UI 멈춤을 방지한다.
+ * </p>
+ * @author 김현준
  */
 public class PaymentPanel extends JPanel {
     
@@ -34,17 +45,18 @@ public class PaymentPanel extends JPanel {
     private final DecimalFormat formatter = new DecimalFormat("###,###"); 
     
     // UI 컴포넌트
-    private JTextField guestNameField;
-    private JTextField roomChargeField;
-    private JTextField foodChargeField;
-    private JTextField cardNumField;
+    private JTextField guestNameField;  // 고객 이름
+    private JTextField reservationIdField; // 예약번호
+    private JTextField roomChargeField; // 객실 가격
+    private JTextField foodChargeField; // 식음료 가격
+    private JTextField cardNumField; // 카드 번호
     private JComboBox<String> methodCombo;
     private JTextArea resultArea;
     
-    private JButton payButton;
-    private JButton historyButton;
-    private JButton deleteButton; 
-    private JButton selectDeleteButton; 
+    private JButton payButton;          // 결제 승인
+    private JButton historyButton;      // 매출/내역 조회
+    private JButton deleteButton;       // 전체 초기화
+    private JButton selectDeleteButton; // 선택 삭제
     
     public PaymentPanel(String serverHost, int serverPort){
         this.paymentApi = new PaymentApi(serverHost, serverPort);
@@ -76,19 +88,24 @@ public class PaymentPanel extends JPanel {
         // 입력 필드들 배치
         addFormField(formPanel, gbc, 0, "고객명:", guestNameField = new JTextField(15));
         
+        reservationIdField = new JTextField(15);
+        addFormField(formPanel, gbc, 1, "예약 번호:", reservationIdField);
+
         roomChargeField = new JTextField("0", 15);
         foodChargeField = new JTextField("0", 15);
-        addFormField(formPanel, gbc, 1, "객실료(원):", roomChargeField);
-        addFormField(formPanel, gbc, 2, "식음료료(원):", foodChargeField);
+        addFormField(formPanel, gbc, 2, "객실료(원):", roomChargeField);
+        addFormField(formPanel, gbc, 3, "식음료(원):", foodChargeField);
 
         String[] methods = {"CARD", "CASH"};
         methodCombo = new JComboBox<>(methods);
         methodCombo.setBackground(Color.WHITE);
         methodCombo.addActionListener(e -> toggleCardField()); 
-        addFormField(formPanel, gbc, 3, "결제 수단:", methodCombo);
+        addFormField(formPanel, gbc, 4, "결제 수단:", methodCombo);
 
         cardNumField = new JTextField(15);
-        addFormField(formPanel, gbc, 4, "카드 번호:", cardNumField);
+        // 카드번호 입력 시 자동 하이픈(-) 생성 필터 적용
+        ((AbstractDocument) cardNumField.getDocument()).setDocumentFilter(new CardNumberFilter());
+        addFormField(formPanel, gbc, 5, "카드 번호:", cardNumField);
 
         // 버튼 패널
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
@@ -96,8 +113,8 @@ public class PaymentPanel extends JPanel {
 
         payButton = createStyledButton("결제 승인", new Color(52, 152, 219)); // 파란색
         historyButton = createStyledButton("매출/내역", new Color(46, 204, 113)); // 초록색
-        deleteButton = createStyledButton("전체 초기화", new Color(231, 76, 60)); // 빨간색
         selectDeleteButton = createStyledButton("선택 삭제", new Color(243, 156, 18)); // 주황색
+        deleteButton = createStyledButton("전체 초기화", new Color(231, 76, 60)); // 빨간색
 
         payButton.addActionListener(this::handlePayment);
         historyButton.addActionListener(this::handleHistory);
@@ -109,11 +126,10 @@ public class PaymentPanel extends JPanel {
         buttonPanel.add(selectDeleteButton); 
         buttonPanel.add(deleteButton);
 
-        // 버튼 패널 배치
-        gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 2;
+        // 버튼 패널 배치 (마지막 행)
+        gbc.gridx = 0; gbc.gridy = 6; gbc.gridwidth = 2;
         gbc.anchor = GridBagConstraints.CENTER;
         formPanel.add(buttonPanel, gbc);
-
 
         // 2. 오른쪽 - 결과 로그 영역
         JPanel resultPanel = new JPanel(new BorderLayout());
@@ -169,6 +185,7 @@ public class PaymentPanel extends JPanel {
     /** 1. 결제 승인 처리 */
     private void handlePayment(ActionEvent e) {
         String name = guestNameField.getText().trim();
+        String resId = reservationIdField.getText().trim();
         String method = (String) methodCombo.getSelectedItem();
         String cardNum = cardNumField.getText().trim();
         String sRoom = roomChargeField.getText().trim();
@@ -188,16 +205,14 @@ public class PaymentPanel extends JPanel {
         final int roomPrice = tempRoom;
         final int foodPrice = tempFood;
         
-        // 영수증에 찍을 '결제 내용'을 여기서 미리 결정합니다.
+        // 결제 타입 문자열 생성
         String tempDetails = "RoomOnly";
-        if (roomPrice == 0 && foodPrice > 0) {
-            tempDetails = "Walk-in(Food)";
-        } else if (roomPrice > 0 && foodPrice > 0) {
-            tempDetails = "Room+Food";
-        }
+        if (roomPrice == 0 && foodPrice > 0) tempDetails = "Walk-in(Food)";
+        else if (roomPrice > 0 && foodPrice > 0) tempDetails = "Room+Food";
         final String details = tempDetails;
         
-        Payment request = new Payment(name, roomPrice, foodPrice, method, cardNum);
+        // PaymentRequest 대신 Payment 객체 생성 (통합 모델)
+        Payment request = new Payment(name, roomPrice, foodPrice, method, cardNum, resId);
 
         setButtonsEnabled(false);
         resultArea.setText(""); 
@@ -217,13 +232,13 @@ public class PaymentPanel extends JPanel {
                         JOptionPane.showMessageDialog(PaymentPanel.this, "결제 성공!");
                         
                         resultArea.setText(""); 
-                        
-                        String receipt = makeCurrentReceipt(name, roomPrice + foodPrice, method, cardNum, details);
-                        
+                        // roomPrice와 foodPrice를 각각 전달하여 상세 영수증 생성
+                        String receipt = makeCurrentReceipt(name, roomPrice, foodPrice, method, cardNum, details, resId);
                         resultArea.append(receipt);
                         
                         // 입력창 초기화
                         guestNameField.setText("");
+                        reservationIdField.setText("");
                         cardNumField.setText("");
                         roomChargeField.setText("0");
                         foodChargeField.setText("0");
@@ -242,7 +257,7 @@ public class PaymentPanel extends JPanel {
         worker.execute();
     }
 
-    /** 2. 내역 조회 처리 */
+    /** 2. 내역 조회 및 매출 분석 처리 */
     private void handleHistory(ActionEvent e) {
         setButtonsEnabled(false);
         resultArea.setText(""); 
@@ -269,19 +284,30 @@ public class PaymentPanel extends JPanel {
                             resultArea.append(">> 저장된 결제 내역이 없습니다.\n");
                         } else {
                             long grandTotal = 0; 
+                            long totalRoomRevenue = 0; 
+                            long totalFoodRevenue = 0; 
 
                             for (Payment p : paymentList) {
                                 resultArea.append(formatReceipt(p));
                                 resultArea.append("\n"); 
-                                grandTotal += p.getTotalAmount(); 
+                                
+                                // 누적 계산
+                                grandTotal += p.getTotalAmount();
+                                totalRoomRevenue += p.getRoomCharge();
+                                totalFoodRevenue += p.getFoodCharge();
                             }
                             
-                            // 총 매출 요약
+                            // 상세 매출 요약표 출력
                             resultArea.append("\n");
                             resultArea.append("##########################################\n");
-                            resultArea.append("           [ 총  매  출  현  황 ]          \n");
+                            resultArea.append("           [ 매  출  분  석  표 ]          \n");
+                            resultArea.append("##########################################\n");
                             resultArea.append(String.format("   총 결제 건수 : %d 건\n", paymentList.size()));
-                            resultArea.append(String.format("   총 매출 합계 : %s 원\n", formatter.format(grandTotal)));
+                            resultArea.append("------------------------------------------\n");
+                            resultArea.append(String.format("   객 실  매 출 : %15s 원\n", formatter.format(totalRoomRevenue)));
+                            resultArea.append(String.format("   식음료 매 출 : %15s 원\n", formatter.format(totalFoodRevenue)));
+                            resultArea.append("------------------------------------------\n");
+                            resultArea.append(String.format("   총   합   계 : %15s 원\n", formatter.format(grandTotal)));
                             resultArea.append("##########################################\n");
                             
                             resultArea.setCaretPosition(resultArea.getDocument().getLength());
@@ -340,23 +366,23 @@ public class PaymentPanel extends JPanel {
         worker.execute();
     }
     
-    /** 4. 선택 삭제 처리 */
+    /** 4. 선택 삭제 처리 (영수증 ID 기반) */
     private void handleSelectDelete(ActionEvent e) {
-        String nameToDelete = JOptionPane.showInputDialog(this, 
-            "삭제할 고객명을 입력하세요:", "선택 삭제", JOptionPane.QUESTION_MESSAGE);
+        String idToDelete = JOptionPane.showInputDialog(this, 
+            "삭제할 [영수증 번호]를 입력하세요:\n(영수증 상단 ID 복사)", "선택 삭제", JOptionPane.QUESTION_MESSAGE);
 
-        if (nameToDelete == null || nameToDelete.trim().isEmpty()) {
+        if (idToDelete == null || idToDelete.trim().isEmpty()) {
             return;
         }
 
         setButtonsEnabled(false);
         resultArea.setText("");
-        resultArea.append(">> '" + nameToDelete + "'님의 내역 삭제 중...\n");
+        resultArea.append(">> 영수증 번호: '" + idToDelete + "' 삭제 요청 중...\n");
 
         SwingWorker<ApiResponse, Void> worker = new SwingWorker<>() {
             @Override
             protected ApiResponse doInBackground() {
-                return paymentApi.deletePaymentByGuestName(nameToDelete);
+                return paymentApi.deleteByReceiptId(idToDelete.trim());
             }
 
             @Override
@@ -385,45 +411,65 @@ public class PaymentPanel extends JPanel {
         StringBuilder sb = new StringBuilder();
         sb.append("==========================================\n");
         sb.append("               [영  수  증]               \n");
+        sb.append(String.format(" 영수증 No: %s\n", p.getReceiptId()));
+        String displayRes = (p.getReservationId() == null || p.getReservationId().isEmpty()) ? "Walk-in" : p.getReservationId();
+        sb.append(String.format(" 예약정보 : %s\n", displayRes));
         sb.append("==========================================\n");
         sb.append(String.format(" 승인일시 : %s\n", p.getPaymentTime()));
         sb.append(String.format(" 고 객 명 : %s\n", p.getGuestName()));
         sb.append("------------------------------------------\n");
-        sb.append(String.format(" 결제내역 : %s\n", p.getDetails())); 
+        
+        if (p.getRoomCharge() > 0) {
+            sb.append(String.format(" 객실 이용료 : %13s 원\n", formatter.format(p.getRoomCharge())));
+        }
+        if (p.getFoodCharge() > 0) {
+            sb.append(String.format(" 식음료 잡비 : %13s 원\n", formatter.format(p.getFoodCharge())));
+        }
+        
+        sb.append("------------------------------------------\n");
         sb.append(String.format(" 결제수단 : %s\n", p.getMethod()));
         
-        // 카드번호가 "N/A"가 아니면 표시
         if (!"N/A".equals(p.getCardNumber())) {
             sb.append(String.format(" 카드번호 : %s\n", p.getCardNumber()));
         }
         sb.append("------------------------------------------\n");
-        sb.append(String.format(" 청구금액 : %24s 원\n", formatter.format(p.getTotalAmount())));
+        sb.append(String.format(" 청구금액 : %13s 원\n", formatter.format(p.getTotalAmount())));
         sb.append("==========================================\n");
         return sb.toString();
     }
 
-    // 즉석 영수증 포맷팅 (방금 결제용)
-    private String makeCurrentReceipt(String name, int total, String method, String cardNum, String details) {
+    // 즉석 영수증 포맷팅 (방금 결제용) - 파라미터 7개로 확장됨
+    private String makeCurrentReceipt(String name, int room, int food, String method, String cardNum, String details, String resId) {
         String nowTime = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        int total = room + food;
         
         StringBuilder sb = new StringBuilder();
         sb.append("*********** [방금 승인된 결제] ***********\n"); 
         sb.append("==========================================\n");
         sb.append("               [영  수  증]               \n");
+        String displayRes = (resId == null || resId.isEmpty()) ? "Walk-in" : resId;
+        sb.append(String.format(" 예약정보 : %s\n", displayRes));
         sb.append("==========================================\n");
         sb.append(String.format(" 승인일시 : %s\n", nowTime));
         sb.append(String.format(" 고 객 명 : %s\n", name));
         sb.append("------------------------------------------\n");
-        // [수정] 전달받은 details를 출력
-        sb.append(String.format(" 결제내역 : %s\n", details)); 
+        
+        // 상세 금액 표시
+        if (room > 0) {
+            sb.append(String.format(" 객실 이용료 : %13s 원\n", formatter.format(room)));
+        }
+        if (food > 0) {
+            sb.append(String.format(" 식음료 잡비 : %13s 원\n", formatter.format(food)));
+        }
+        
+        sb.append("------------------------------------------\n");
         sb.append(String.format(" 결제수단 : %s\n", method));   
         
-        // 카드번호가 입력되었으면 표시
         if (cardNum != null && !cardNum.isEmpty()) {
             sb.append(String.format(" 카드번호 : %s\n", cardNum));
         }
         sb.append("------------------------------------------\n");
-        sb.append(String.format(" 결제금액 : %24s 원\n", formatter.format(total)));
+        sb.append(String.format(" 결제금액 : %13s 원\n", formatter.format(total)));
         sb.append("==========================================\n");
         sb.append("           이용해 주셔서 감사합니다.          \n");
         return sb.toString();
@@ -434,5 +480,35 @@ public class PaymentPanel extends JPanel {
         historyButton.setEnabled(enabled);
         deleteButton.setEnabled(enabled);
         selectDeleteButton.setEnabled(enabled);
+    }
+
+    /**
+     * [카드번호 자동 포맷팅 필터]
+     * - 숫자만 입력 허용
+     * - 4자리마다 자동으로 하이픈(-) 삽입
+     */
+    private class CardNumberFilter extends DocumentFilter {
+        @Override
+        public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr) throws BadLocationException {
+            replace(fb, offset, 0, string, attr);
+        }
+
+        @Override
+        public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs) throws BadLocationException {
+            String currentText = fb.getDocument().getText(0, fb.getDocument().getLength());
+            String before = currentText.substring(0, offset);
+            String after = currentText.substring(offset + length);
+            String rawText = before + (text == null ? "" : text) + after;
+
+            String digits = rawText.replaceAll("[^0-9]", "");
+            if (digits.length() > 16) digits = digits.substring(0, 16);
+
+            StringBuilder formatted = new StringBuilder();
+            for (int i = 0; i < digits.length(); i++) {
+                if (i > 0 && i % 4 == 0) formatted.append("-");
+                formatted.append(digits.charAt(i));
+            }
+            super.replace(fb, 0, fb.getDocument().getLength(), formatted.toString(), attrs);
+        }
     }
 }

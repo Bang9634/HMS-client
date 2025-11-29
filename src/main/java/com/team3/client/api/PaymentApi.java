@@ -10,7 +10,7 @@ import com.team3.dto.response.Payment;
 
 /**
  * 결제 관련 API 호출 클래스
- * * @author 김현준
+ * @author 김현준
  */
 public class PaymentApi extends HmsClient {
 
@@ -20,7 +20,7 @@ public class PaymentApi extends HmsClient {
         super(serverHost, serverPort);
     }
 
-    // 파라미터 PaymentRequest -> Payment 로 변경됨
+    // 결제 승인 처리
     public ApiResponse processPayment(Payment request) {
         try {
             if (request.getGuestName() == null || request.getGuestName().trim().isEmpty()) {
@@ -28,10 +28,7 @@ public class PaymentApi extends HmsClient {
             }
 
             logger.info("결제 승인 요청 전송: 고객={}", request.getGuestName());
-            
-            // Payment 객체를 그대로 서버로 전송 (서버도 Payment로 받음)
             HttpResponse<String> response = sendPost("/api/payments/process", request);
-            
             return new ApiResponse(response.statusCode(), response.body());
 
         } catch (IOException e) {
@@ -39,10 +36,11 @@ public class PaymentApi extends HmsClient {
             return ApiResponse.error("서버 연결 실패: " + e.getMessage());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            return ApiResponse.error("요청이 중단되었습니다.");
+            return ApiResponse.error("요청 중단");
         }
     }
 
+    // 전체 내역 조회
     public ApiResponse getPaymentHistory() {
         try {
             HttpResponse<String> response = sendGet("/api/payments/history");
@@ -52,6 +50,7 @@ public class PaymentApi extends HmsClient {
         }
     }
 
+    // 전체 데이터 삭제
     public ApiResponse deletePaymentHistory() {
         try {
             HttpResponse<String> response = sendDelete("/api/payments/history");
@@ -60,20 +59,33 @@ public class PaymentApi extends HmsClient {
             return ApiResponse.error("삭제 실패");
         }
     }
-    
+
+    // 고객 이름으로 삭제
     public ApiResponse deletePaymentByGuestName(String guestName) {
         try {
-            // 한글 이름을 URL에 넣으려면 인코딩 필요
             String encodedName = java.net.URLEncoder.encode(guestName, "UTF-8");
             String url = "/api/payments/history?guestName=" + encodedName;
-        
-            logger.info("개별 내역 삭제 요청: {}", guestName);
             HttpResponse<String> response = sendDelete(url);
             return new ApiResponse(response.statusCode(), response.body());
         } catch (Exception e) {
-            logger.error("개별 삭제 중 오류", e);
             return ApiResponse.error("삭제 실패");
         }
     }
-    
+
+    // 영수증 ID로 삭제
+    public ApiResponse deleteByReceiptId(String receiptId) {
+        try {
+            String encodedId = java.net.URLEncoder.encode(receiptId, "UTF-8");
+            String url = "/api/payments/history?receiptId=" + encodedId;
+
+            logger.info("영수증 개별 삭제 요청: {}", receiptId);
+
+            HttpResponse<String> response = sendDelete(url);
+            return new ApiResponse(response.statusCode(), response.body());
+
+        } catch (Exception e) {
+            logger.error("영수증 삭제 중 오류", e);
+            return ApiResponse.error("삭제 실패");
+        }
+    }
 }
