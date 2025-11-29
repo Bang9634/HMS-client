@@ -11,6 +11,10 @@ import java.awt.Insets;
 import java.awt.Window;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Calendar;
+import java.util.Date;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -18,7 +22,9 @@ import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JSpinner;
 import javax.swing.JTextField;
+import javax.swing.SpinnerDateModel;
 import javax.swing.SwingWorker;
 
 import com.team3.client.api.ReservationApi;
@@ -32,8 +38,8 @@ public class AddReservationDialog extends JDialog {
     private JTextField roomIdField;
     private JTextField guestNameField;
     private JTextField phoneField;
-    private JTextField checkInField;
-    private JTextField checkOutField;
+    private JSpinner checkInSpinner;
+    private JSpinner checkOutSpinner;
     private JTextField guestCountField;
     
     private JButton okButton;
@@ -73,8 +79,13 @@ public class AddReservationDialog extends JDialog {
         // ▼▼▼ [추가 1] 전화번호 자동 하이픈 리스너 연결 ▼▼▼
         addAutoHyphenListener(phoneField);
 
-        checkInField = new JTextField("2025-01-01", 15); // 예시 날짜
-        checkOutField = new JTextField("2025-01-02", 15);
+        
+        Date todayDate = Date.from(LocalDate.now().atStartOfDay(ZoneId.systemDefault()).toInstant());
+
+        checkInSpinner = new JSpinner(new SpinnerDateModel(todayDate, null, null, Calendar.DAY_OF_MONTH));
+        checkInSpinner.setEditor(new JSpinner.DateEditor(checkInSpinner, "yyyy-MM-dd"));
+        checkOutSpinner = new JSpinner(new SpinnerDateModel(todayDate, null, null, Calendar.DAY_OF_MONTH));
+        checkOutSpinner.setEditor(new JSpinner.DateEditor(checkOutSpinner, "yyyy-MM-dd"));
         guestCountField = new JTextField("2", 15);
 
         okButton = new JButton(isEditMode ? "수정완료" : "예약하기");
@@ -141,8 +152,8 @@ public class AddReservationDialog extends JDialog {
         addFormField(formPanel, gbc, 0, "객실 번호:", roomIdField);
         addFormField(formPanel, gbc, 1, "예약자명:", guestNameField);
         addFormField(formPanel, gbc, 2, "전화번호:", phoneField);
-        addFormField(formPanel, gbc, 3, "체크인:", checkInField);
-        addFormField(formPanel, gbc, 4, "체크아웃:", checkOutField);
+        addFormField(formPanel, gbc, 3, "체크인:", checkInSpinner);
+        addFormField(formPanel, gbc, 4, "체크아웃:", checkOutSpinner);
         addFormField(formPanel, gbc, 5, "인원 수:", guestCountField);
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
@@ -169,8 +180,11 @@ public class AddReservationDialog extends JDialog {
         roomIdField.setText(existingReservation.getRoomId());
         guestNameField.setText(existingReservation.getGuestName());
         phoneField.setText(existingReservation.getPhone());
-        checkInField.setText(existingReservation.getCheckInDate());
-        checkOutField.setText(existingReservation.getCheckOutDate());
+        LocalDate checkInDate = LocalDate.parse(existingReservation.getCheckInDate());
+        LocalDate checkOutDate = LocalDate.parse(existingReservation.getCheckOutDate());
+        checkInSpinner.setValue(Date.from(checkInDate.atStartOfDay(ZoneId.systemDefault()).toInstant()));
+        checkOutSpinner.setValue(Date.from(checkOutDate.atStartOfDay(ZoneId.systemDefault()).toInstant()));
+
         guestCountField.setText(String.valueOf(existingReservation.getGuestCount()));
     }
 
@@ -178,8 +192,12 @@ public class AddReservationDialog extends JDialog {
         String roomId = roomIdField.getText().trim();
         String guestName = guestNameField.getText().trim();
         String phone = phoneField.getText().trim();
-        String checkIn = checkInField.getText().trim();
-        String checkOut = checkOutField.getText().trim();
+
+        Date checkInDate = (Date) checkInSpinner.getValue();
+        Date checkOutDate = (Date) checkOutSpinner.getValue();
+        LocalDate checkIn = checkInDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+        LocalDate checkOut = checkOutDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+
         String guestCountStr = guestCountField.getText().trim();
 
         // 1. 필수 값 체크
@@ -229,12 +247,12 @@ public class AddReservationDialog extends JDialog {
                 if (isEditMode) {
                     UpdateReservationRequest req = new UpdateReservationRequest(
                         existingReservation.getId(), existingReservation.getUserId(),
-                        roomId, guestName, phone, checkIn, checkOut, guestCount
+                        roomId, guestName, phone, checkIn.toString(), checkOut.toString(), guestCount
                     );
                     return reservationApi.updateReservation(req);
                 } else {
                     AddReservationRequest req = new AddReservationRequest(
-                        roomId, guestName, phone, checkIn, checkOut, guestCount
+                        roomId, guestName, phone, checkIn.toString(), checkOut.toString(), guestCount
                     );
                     return reservationApi.createReservation(req);
                 }

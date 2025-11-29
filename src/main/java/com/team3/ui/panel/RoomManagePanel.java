@@ -37,6 +37,7 @@ import com.team3.client.api.RoomApi;
 import com.team3.dto.request.RoomIdRequest;
 import com.team3.dto.response.ApiResponse;
 import com.team3.ui.dialog.AddRoomDialog;
+import com.team3.ui.dialog.EditRoomDialog;
 import com.team3.ui.dialog.PriceChangeLogDialog;
 
 /**
@@ -250,23 +251,23 @@ public class RoomManagePanel extends JPanel {
 	 * 객실 수정 버튼 클릭 처리
 	 */
 	private void handleEditRoom(int row) {
-		// int roomId = (int) tableModel.getValueAt(row, 0);
-		// int basePrice = (int) tableModel.getValueAt(row, 1);
-		// boolean isAvailable = "비어있음".equals(tableModel.getValueAt(row, 2));
-		// int maxOccupancy = (int) tableModel.getValueAt(row, 3);
-		// String priceChangeReason = (String) tableModel.getValueAt(row, 4);
+		int roomId = (int) tableModel.getValueAt(row, 0);
+		int basePrice = (int) tableModel.getValueAt(row, 1);
+		boolean isAvailable = "비어있음".equals(tableModel.getValueAt(row, 2));
+		int maxOccupancy = (int) tableModel.getValueAt(row, 3);
+		String priceChangeReason = (String) tableModel.getValueAt(row, 4);
 
-		// EditRoomDialog dialog = new EditRoomDialog(
-		// 	SwingUtilities.getWindowAncestor(this),
-		// 	roomApi,
-		// 	roomId,
-		// 	basePrice,
-		// 	isAvailable,
-		// 	maxOccupancy,
-		// 	priceChangeReason
-		// );
-		// dialog.setVisible(true);
-		// loadRoomList();
+		EditRoomDialog dialog = new EditRoomDialog(
+			SwingUtilities.getWindowAncestor(this),
+			roomApi,
+			roomId,
+			basePrice,
+			isAvailable,
+			maxOccupancy,
+			priceChangeReason
+		);
+		dialog.setVisible(true);
+		loadRoomList();
 	}
 
 	/**
