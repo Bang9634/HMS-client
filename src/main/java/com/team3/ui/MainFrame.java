@@ -17,6 +17,7 @@ import com.team3.ui.component.StatusBar;
 import com.team3.ui.panel.CustomerManagePanel; // FnbManagePanel import
 import com.team3.ui.panel.FnbManagePanel;
 import com.team3.ui.panel.HealthCheckPanel;
+import com.team3.ui.panel.PaymentPanel;
 import com.team3.ui.panel.ReservationPanel; // ReservationPanel import
 import com.team3.ui.panel.RoomManagePanel;
 import com.team3.ui.panel.UserManagePanel;
@@ -74,7 +75,7 @@ public class MainFrame extends JFrame {
         addTab("예약 관리", "📅", new ReservationPanel(serverHost, serverPort), "예약 조회 및 관리");
         addTab("식음료 관리", "🍽️", new FnbManagePanel(serverHost, serverPort), "식음료 조회 및 관리");        
         addTab("고객 관리", "👥", new CustomerManagePanel(serverHost, serverPort), "고객 조회 및 관리");    
-        addTab("결제 관리", "💳", new com.team3.ui.panel.PaymentPanel(serverHost, serverPort), "결제 및 체크아웃");
+        addTab("결제 관리", "💳", new PaymentPanel(serverHost, serverPort), "결제 및 체크아웃");
         
         // 메뉴바 생성
         AppMenuBar menuBar = new AppMenuBar(this, tabbedPane, serverHost, serverPort);
