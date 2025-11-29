@@ -14,7 +14,8 @@ import com.team3.session.SessionManager;
 import com.team3.ui.component.AppMenuBar;
 import com.team3.ui.component.HeaderPanel;
 import com.team3.ui.component.StatusBar;
-import com.team3.ui.panel.FnbManagePanel; // FnbManagePanel import
+import com.team3.ui.panel.CustomerManagePanel; // FnbManagePanel import
+import com.team3.ui.panel.FnbManagePanel;
 import com.team3.ui.panel.HealthCheckPanel;
 import com.team3.ui.panel.ReservationPanel; // ReservationPanel import
 import com.team3.ui.panel.RoomManagePanel;
@@ -72,8 +73,7 @@ public class MainFrame extends JFrame {
         addTab("객실 관리", "🏨", new RoomManagePanel(serverHost, serverPort), "객실 조회 및 관리");
         addTab("예약 관리", "📅", new ReservationPanel(serverHost, serverPort), "예약 조회 및 관리");
         addTab("식음료 관리", "🍽️", new FnbManagePanel(serverHost, serverPort), "식음료 조회 및 관리");        
-        addTab("고객 관리", "📅", IconUtil.createPlaceholderPanel("고객 관리"), "고객 조회 및 관리");
-        
+        addTab("고객 관리", "👥", new CustomerManagePanel(serverHost, serverPort), "고객 조회 및 관리");    
         // 메뉴바 생성
         AppMenuBar menuBar = new AppMenuBar(this, tabbedPane, serverHost, serverPort);
         setJMenuBar(menuBar);
