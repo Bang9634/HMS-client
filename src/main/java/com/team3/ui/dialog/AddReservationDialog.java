@@ -2,13 +2,15 @@ package com.team3.ui.dialog;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Component;
 import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.Window;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+import java.util.concurrent.ExecutionException;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -24,6 +26,7 @@ import com.team3.dto.request.AddReservationRequest;
 import com.team3.dto.request.UpdateReservationRequest;
 import com.team3.dto.response.ApiResponse;
 import com.team3.model.Reservation;
+import java.awt.Component;
 
 public class AddReservationDialog extends JDialog {
 
@@ -39,17 +42,13 @@ public class AddReservationDialog extends JDialog {
     private JLabel statusLabel;
 
     private final ReservationApi reservationApi;
-    
-    // 수정 모드 관련 변수
     private Reservation existingReservation = null; 
     private boolean isEditMode = false;
 
-    // 1. 기본 생성자 (추가용)
     public AddReservationDialog(Window parent, ReservationApi reservationApi) {
         this(parent, reservationApi, null);
     }
 
-    // 2. [수정] 통합 생성자 (수정용 데이터 받음)
     public AddReservationDialog(Window parent, ReservationApi reservationApi, Reservation reservation) {
         super(parent, reservation == null ? "예약 추가" : "예약 수정", ModalityType.APPLICATION_MODAL);
         this.reservationApi = reservationApi;
@@ -59,10 +58,7 @@ public class AddReservationDialog extends JDialog {
         initComponents();
         setupLayout();
         
-        // 수정 모드면 데이터 채우기
-        if (isEditMode) {
-            fillData();
-        }
+        if (isEditMode) fillData();
         
         pack();
         setLocationRelativeTo(parent);
@@ -71,27 +67,67 @@ public class AddReservationDialog extends JDialog {
     private void initComponents() {
         roomIdField = new JTextField(15);
         guestNameField = new JTextField(15);
+        
         phoneField = new JTextField(15);
-        checkInField = new JTextField(15);
-        checkOutField = new JTextField(15);
+        // ▼▼▼ [추가 1] 전화번호 자동 하이픈 리스너 연결 ▼▼▼
+        addAutoHyphenListener(phoneField);
+
+        checkInField = new JTextField("2025-01-01", 15); // 예시 날짜
+        checkOutField = new JTextField("2025-01-02", 15);
         guestCountField = new JTextField("2", 15);
 
-        // 버튼 텍스트 변경 (예약하기 / 수정완료)
         okButton = new JButton(isEditMode ? "수정완료" : "예약하기");
         okButton.setBackground(new Color(39, 174, 96));
-        okButton.setForeground(Color.WHITE);
+        okButton.setForeground(Color.BLACK);
         okButton.setFont(new Font("맑은 고딕", Font.BOLD, 13));
         okButton.addActionListener(e -> handleSubmit());
 
         cancelButton = new JButton("취소");
         cancelButton.setBackground(new Color(192, 57, 43));
-        cancelButton.setForeground(Color.WHITE);
+        cancelButton.setForeground(Color.BLACK);
         cancelButton.setFont(new Font("맑은 고딕", Font.BOLD, 13));
         cancelButton.addActionListener(e -> dispose());
 
         statusLabel = new JLabel(" ");
         statusLabel.setFont(new Font("맑은 고딕", Font.PLAIN, 12));
         statusLabel.setForeground(new Color(52, 73, 94));
+    }
+
+    // ▼▼▼ [추가 2] 자동 하이픈 로직 (AddCustomerDialog와 동일) ▼▼▼
+    private void addAutoHyphenListener(JTextField textField) {
+        textField.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_BACK_SPACE || e.getKeyCode() == KeyEvent.VK_DELETE) {
+                    return;
+                }
+                String text = textField.getText();
+                String numbers = text.replaceAll("[^0-9]", "");
+                
+                String formatted = "";
+                if (numbers.length() < 4) {
+                    formatted = numbers;
+                } else if (numbers.length() < 7) {
+                    formatted = numbers.substring(0, 3) + "-" + numbers.substring(3);
+                } else if (numbers.length() < 11) {
+                    formatted = numbers.substring(0, 3) + "-" + numbers.substring(3, 6) + "-" + numbers.substring(6);
+                } else {
+                    if (numbers.length() > 11) numbers = numbers.substring(0, 11);
+                    formatted = numbers.substring(0, 3) + "-" + numbers.substring(3, 7) + "-" + numbers.substring(7);
+                }
+
+                if (!text.equals(formatted)) {
+                    textField.setText(formatted);
+                }
+            }
+            @Override
+            public void keyTyped(KeyEvent e) {
+                char c = e.getKeyChar();
+                if (!Character.isDigit(c) && c != KeyEvent.VK_BACK_SPACE && c != KeyEvent.VK_DELETE) {
+                    e.consume();
+                }
+            }
+        });
     }
 
     private void setupLayout() {
@@ -128,7 +164,6 @@ public class AddReservationDialog extends JDialog {
         panel.add(comp, gbc);
     }
 
-    // [추가] 기존 데이터를 입력창에 채워넣는 메서드
     private void fillData() {
         roomIdField.setText(existingReservation.getRoomId());
         guestNameField.setText(existingReservation.getGuestName());
@@ -138,62 +173,88 @@ public class AddReservationDialog extends JDialog {
         guestCountField.setText(String.valueOf(existingReservation.getGuestCount()));
     }
 
-    // [수정] 추가/수정 분기 처리
     private void handleSubmit() {
+        String roomId = roomIdField.getText().trim();
+        String guestName = guestNameField.getText().trim();
+        String phone = phoneField.getText().trim();
+        String checkIn = checkInField.getText().trim();
+        String checkOut = checkOutField.getText().trim();
+        String guestCountStr = guestCountField.getText().trim();
+
+        // 1. 필수 값 체크
+        if (roomId.isEmpty() || guestName.isEmpty() || phone.isEmpty()) {
+            statusLabel.setText("필수 정보를 입력하세요.");
+            statusLabel.setForeground(new Color(192, 57, 43));
+            return;
+        }
+
+        // ▼▼▼ [추가 3] 이름 형식 검증 ▼▼▼
+        String namePattern = "^[가-힣a-zA-Z\\s]+$";
+        if (!guestName.matches(namePattern) || guestName.length() < 2) {
+            JOptionPane.showMessageDialog(this, 
+                "예약자명 형식이 올바르지 않습니다.\n(한글 또는 영문만 입력 가능, 2글자 이상)", 
+                "입력 오류", 
+                JOptionPane.WARNING_MESSAGE);
+            guestNameField.requestFocus();
+            return;
+        }
+
+        // ▼▼▼ [추가 4] 전화번호 형식 검증 ▼▼▼
+        String phonePattern = "^\\d{2,3}-\\d{3,4}-\\d{4}$";
+        if (!phone.matches(phonePattern)) {
+            JOptionPane.showMessageDialog(this, 
+                "전화번호 형식이 올바르지 않습니다.\n(예: 010-1234-5678)", 
+                "입력 오류", 
+                JOptionPane.WARNING_MESSAGE);
+            phoneField.requestFocus();
+            return;
+        }
+
+        // 인원 수 숫자 변환
+        int guestCount;
         try {
-            String roomId = roomIdField.getText().trim();
-            String guestName = guestNameField.getText().trim();
-            String phone = phoneField.getText().trim();
-            String checkIn = checkInField.getText().trim();
-            String checkOut = checkOutField.getText().trim();
-            int guestCount = Integer.parseInt(guestCountField.getText().trim());
-
-            if (roomId.isEmpty() || guestName.isEmpty()) {
-                statusLabel.setText("필수 정보를 입력하세요.");
-                return;
-            }
-
-            okButton.setEnabled(false);
-            statusLabel.setText("처리 중...");
-
-            SwingWorker<ApiResponse, Void> worker = new SwingWorker<>() {
-                @Override protected ApiResponse doInBackground() {
-                    if (isEditMode) {
-                        // [수정 요청]
-                        UpdateReservationRequest req = new UpdateReservationRequest(
-                            existingReservation.getId(), // ID 필수!
-                            existingReservation.getUserId(),
-                            roomId, guestName, phone, checkIn, checkOut, guestCount
-                        );
-                        return reservationApi.updateReservation(req);
-                    } else {
-                        // [생성 요청]
-                        AddReservationRequest req = new AddReservationRequest(
-                            roomId, guestName, phone, checkIn, checkOut, guestCount
-                        );
-                        return reservationApi.createReservation(req);
-                    }
-                }
-
-                @Override protected void done() {
-                    okButton.setEnabled(true);
-                    try {
-                        ApiResponse response = get();
-                        if (response.isSuccess()) {
-                            JOptionPane.showMessageDialog(AddReservationDialog.this, isEditMode ? "수정되었습니다." : "예약되었습니다.");
-                            dispose();
-                        } else {
-                            statusLabel.setText("실패: " + response.getBody());
-                        }
-                    } catch (Exception e) {
-                        statusLabel.setText("오류: " + e.getMessage());
-                    }
-                }
-            };
-            worker.execute();
-
+            guestCount = Integer.parseInt(guestCountStr);
         } catch (NumberFormatException e) {
             statusLabel.setText("인원 수는 숫자여야 합니다.");
+            statusLabel.setForeground(new Color(192, 57, 43));
+            return;
         }
+
+        okButton.setEnabled(false);
+        statusLabel.setText("처리 중...");
+
+        SwingWorker<ApiResponse, Void> worker = new SwingWorker<>() {
+            @Override protected ApiResponse doInBackground() {
+                if (isEditMode) {
+                    UpdateReservationRequest req = new UpdateReservationRequest(
+                        existingReservation.getId(), existingReservation.getUserId(),
+                        roomId, guestName, phone, checkIn, checkOut, guestCount
+                    );
+                    return reservationApi.updateReservation(req);
+                } else {
+                    AddReservationRequest req = new AddReservationRequest(
+                        roomId, guestName, phone, checkIn, checkOut, guestCount
+                    );
+                    return reservationApi.createReservation(req);
+                }
+            }
+            @Override protected void done() {
+                okButton.setEnabled(true);
+                try {
+                    ApiResponse response = get();
+                    if (response.isSuccess()) {
+                        JOptionPane.showMessageDialog(AddReservationDialog.this, isEditMode ? "수정되었습니다." : "예약되었습니다.");
+                        dispose();
+                    } else {
+                        statusLabel.setText("실패: " + response.getBody());
+                        statusLabel.setForeground(new Color(192, 57, 43));
+                    }
+                } catch (Exception e) {
+                    statusLabel.setText("오류: " + e.getMessage());
+                    statusLabel.setForeground(new Color(192, 57, 43));
+                }
+            }
+        };
+        worker.execute();
     }
 }
