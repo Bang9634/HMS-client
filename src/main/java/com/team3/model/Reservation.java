@@ -15,6 +15,7 @@ public class Reservation {
     private String checkInDate;
     private String checkOutDate;
     private int guestCount;
+    private boolean isCheckedIn;
     
     // JSON 파싱 오류 방지를 위해 String으로 변경
     private String createdAt;
@@ -53,6 +54,10 @@ public class Reservation {
     
     public String getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(String updatedAt) { this.updatedAt = updatedAt; }
+
+    public boolean isCheckedIn() { return isCheckedIn; }
+    public void setIsCheckedIn(boolean isCheckedIn) {this.isCheckedIn = isCheckedIn; }
+    
     
     @Override
     public String toString() {

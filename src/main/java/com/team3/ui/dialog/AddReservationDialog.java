@@ -265,7 +265,7 @@ public class AddReservationDialog extends JDialog {
                         JOptionPane.showMessageDialog(AddReservationDialog.this, isEditMode ? "수정되었습니다." : "예약되었습니다.");
                         dispose();
                     } else {
-                        statusLabel.setText("실패: " + response.getBody());
+                        statusLabel.setText("실패: " + response.getMessage());
                         statusLabel.setForeground(new Color(192, 57, 43));
                     }
                 } catch (Exception e) {

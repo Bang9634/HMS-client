@@ -33,10 +33,12 @@ import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import com.team3.client.api.ReservationApi;
+import com.team3.dto.request.CheckIntOutRequest;
 import com.team3.dto.request.DeleteReservationRequest;
 import com.team3.dto.response.ApiResponse;
 import com.team3.model.Reservation;
 import com.team3.ui.dialog.AddReservationDialog;
+import com.team3.util.JsonUtil;
 
 public class ReservationPanel extends JPanel {
 
@@ -51,7 +53,7 @@ public class ReservationPanel extends JPanel {
     private JProgressBar progressBar;
 
     private static final String[] COLUMN_NAMES = {
-        "예약ID", "객실번호", "예약자명", "전화번호", "체크인", "체크아웃", "인원", "예약변경", "예약취소"
+        "예약ID", "객실번호", "예약자명", "전화번호", "체크인", "체크아웃", "인원", "체크인/아웃","예약변경", "예약취소"
     };
 
     public ReservationPanel(String serverHost, int serverPort) {
@@ -84,7 +86,7 @@ public class ReservationPanel extends JPanel {
         tableModel = new DefaultTableModel(COLUMN_NAMES, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column == 7 || column == 8; // 수정(7), 취소(8)
+                return column == 7 || column == 8|| column == 9; // 수정(7), 취소(8)
             }
         };
         reservationTable = new JTable(tableModel);
@@ -94,6 +96,18 @@ public class ReservationPanel extends JPanel {
         reservationTable.getTableHeader().setFont(new Font("맑은 고딕", Font.BOLD, 13));
         reservationTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
+        
+        reservationTable.getColumn("체크인/아웃").setCellRenderer(new ButtonRenderer("", new Color(52, 152, 219)){
+        @Override
+        public Component getTableCellRendererComponent(JTable t, Object v, boolean s, boolean f, int r, int c) {
+            String text = (String) t.getValueAt(r, c);
+            setText(text);
+            return this;
+            }
+        });
+        reservationTable.getColumn("체크인/아웃").setCellEditor(new ButtonEditor("", this::handleCheckInOut));
+
+    
         // [추가] "수정" 버튼 렌더러/에디터 (노란색)
         reservationTable.getColumn("예약변경").setCellRenderer(new ButtonRenderer("예약변경", new Color(241, 196, 15)));
         reservationTable.getColumn("예약변경").setCellEditor(new ButtonEditor("예약변경", this::handleEditReservation));
@@ -200,10 +214,38 @@ public class ReservationPanel extends JPanel {
             row.add(r.getCheckInDate());
             row.add(r.getCheckOutDate());
             row.add(r.getGuestCount());
+            row.add(r.isCheckedIn() ? "체크아웃" : "체크인");
             row.add("수정");
             row.add("취소");
             tableModel.addRow(row);
         }
+    }
+
+    private void handleCheckInOut(int row) {
+        String id = (String)tableModel.getValueAt(row, 0);
+        int roomId = Integer.parseInt((String)tableModel.getValueAt(row, 1));
+        String currentState = (String) tableModel.getValueAt(row, 7);
+
+        // 상태 토글: 체크인 → 체크아웃, 체크아웃 → 체크인
+        
+        boolean checkedIn = "체크아웃".equals(currentState);
+
+        // 서버에 체크인/체크아웃 상태 변경 요청
+        ApiResponse response = reservationApi.checkInOut(new CheckIntOutRequest(id, roomId, checkedIn));
+        checkedIn = "true".equals(JsonUtil.extract(response.getBody(), "isCheckedIn"));
+
+        if (response.getStatusCode() != 200) {
+            JOptionPane.showConfirmDialog(this, response.getBody(), "체크인/아웃 실패", JOptionPane.CLOSED_OPTION);
+            if (reservationTable.isEditing()) reservationTable.getCellEditor().stopCellEditing();
+            return;
+        }
+        if (checkedIn) {
+            JOptionPane.showConfirmDialog(this, response.getMessage(), "체크인 성공", JOptionPane.CLOSED_OPTION);
+        } else {
+            JOptionPane.showConfirmDialog(this, response.getMessage(), "체크아웃 성공", JOptionPane.CLOSED_OPTION);
+        }
+        if (reservationTable.isEditing()) reservationTable.getCellEditor().stopCellEditing();
+        loadReservationList();
     }
 
     private void handleAddReservation() {

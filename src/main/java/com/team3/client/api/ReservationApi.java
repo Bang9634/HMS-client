@@ -8,9 +8,10 @@ import org.slf4j.LoggerFactory;
 
 import com.team3.client.HmsClient;
 import com.team3.dto.request.AddReservationRequest;
+import com.team3.dto.request.CheckIntOutRequest;
 import com.team3.dto.request.DeleteReservationRequest;
-import com.team3.dto.response.ApiResponse;
 import com.team3.dto.request.UpdateReservationRequest;
+import com.team3.dto.response.ApiResponse;
 
 /**
  * 예약 관련 API 호출을 담당하는 클라이언트 클래스
@@ -157,6 +158,24 @@ public class ReservationApi extends HmsClient {
             return new ApiResponse(response.statusCode(), response.body());
         } catch (Exception e) {
             logger.error("예약 수정 실패", e);
+            return ApiResponse.error("요청 실패: " + e.getMessage());
+        }
+    }
+
+    public ApiResponse checkInOut(CheckIntOutRequest request) {
+        try {
+            HttpResponse<String> response;
+            if (!request.isCheckedIn()) {
+                logger.info("체크인 요청: roomId={}", request.getRoomId());
+                response= sendPost("/api/reservation/checkin", request);
+            } else {
+                logger.info("체크아웃 요청: roomId={}", request.getRoomId());
+                response = sendPost("/api/reservation/checkout", request);
+            }
+            
+            return new ApiResponse(response.statusCode(), response.body());
+        } catch (Exception e) {
+            logger.error("체크인/아웃 수정 실패", e);
             return ApiResponse.error("요청 실패: " + e.getMessage());
         }
     }
